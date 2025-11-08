@@ -9,20 +9,18 @@
   <style>
     body { background: #fff8e1; font-family: 'Segoe UI', sans-serif; }
     .menu-card { transition: 0.3s; cursor: pointer; }
-    .menu-card:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    .menu-card:hover { transform: scale(1.05); box-shadow: 0 10世的20px rgba(0,0,0,0.2); }
     .img-menu { height: 180px; object-fit: cover; }
     .d-none { display: none !important; }
-    @media (max-width: 767px) {
-      #adminBtn { display: inline-block !important; }
-    }
+    @media (max-width: 767px) { #adminBtn { display: inline-block !important; } }
     #notifSound { display: none; }
   </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1 firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
+  <!-- HEADER, MENU, KERANJANG, CHECKOUT, LOGIN, ADMIN SAMA SEPERTI SEBELUMNYA -->
+
   <div class="bg-danger text-white py-3 sticky-top shadow">
     <div class="container d-flex justify-content-between align-items-center">
       <h3 class="mb-0">🍔 WARUNG MAKAN ENAK</h3>
@@ -30,76 +28,14 @@
         <i class="bi bi-cart-fill"></i> <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
       </button>
     </div>
+  mirip seperti kode sebelumnya, tapi script di bawah yang baru
   </div>
 
-  <div class="container mt-4" id="menuPage">
-    <div class="row row-cols-2 row-cols-md-4 g-4" id="menuContainer"></div>
-  </div>
-
-  <div class="container mt-5 d-none" id="keranjangPage">
-    <h3>Keranjang Belanja <span id="cartTotal" class="text-danger fw-bold">Rp 0</span></h3>
-    <div id="cartItems" class="mb-4"></div>
-    <button class="btn btn-success w-100 mt-3 fw-bold" onclick="showPage('checkoutPage')" id="checkoutBtn" disabled>Lanjut Checkout</button>
-    <button class="btn btn-secondary w-100 mt-2" onclick="showPage('menuPage')">Tambah Menu Lagi</button>
-  </div>
-
-  <div class="container mt-5 d-none" id="checkoutPage">
-    <div class="card shadow">
-      <div class="card-header bg-success text-white text-center"><h4>Checkout Pesanan</h4></div>
-      <div class="card-body">
-        <div class="mb-3"><label class="form-label fw-bold">Nama Pemesan *</label><input type="text" id="namaCheckout" class="form-control" required></div>
-        <div class="mb-3"><label class="form-label fw-bold">Nomor HP *</label><input type="text" id="hpCheckout" class="form-control" placeholder="628123456789" required></div>
-        <div class="mb-3"><label class="form-label fw-bold">Metode Pembayaran *</label>
-          <select id="pembayaran" class="form-select" required>
-            <option value="">-- Pilih --</option>
-            <option value="Cash di Kasir">Cash di Kasir</option>
-            <option value="QRIS">QRIS (scan di kasir)</option>
-          </select>
-        </div>
-        <div class="mb-3"><label class="form-label fw-bold">Catatan</label><textarea id="catatanCheckout" class="form-control" rows="2"></textarea></div>
-        <button class="btn btn-primary btn-lg w-100 fw-bold" onclick="kirimPesanan()">KIRIM PESANAN</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="container mt-5 d-none" id="loginPage">
-    <div class="card mx-auto shadow" style="max-width:400px;">
-      <div class="card-header bg-dark text-white text-center"><h4>🔐 Login Admin</h4></div>
-      <div class="card-body">
-        <input type="password" id="adminPass" class="form-control mb-3" placeholder="Password">
-        <button class="btn btn-primary w-100" onclick="loginAdmin()">Login</button>
-        <small class="text-muted d-block text-center mt-2">Default: admin123</small>
-      </div>
-    </div>
-  </div>
-
-  <div class="container mt-4 d-none" id="adminPage">
-    <h2 class="text-danger fw-bold">📊 Dashboard Admin 
-      <button onclick="logout()" class="btn btn-danger btn-sm float-end">Logout</button>
-      <button onclick="clearAllPesanan()" class="btn btn-warning btn-sm float-end me-2">Hapus Semua Pesanan</button>
-      <button onclick="tambahMenuBaru()" class="btn btn-success btn-sm float-end me-2">+ Menu Baru</button>
-    </h2>
-    <div class="table-responsive mb-4">
-      <table class="table table-striped" id="ordersTable">
-        <thead class="table-dark"><tr><th>No</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Waktu</th><th>Aksi</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <h4>Atur Menu</h4>
-    <div id="menuAdminContainer" class="row row-cols-2 row-cols-md-4 g-4"></div>
-  </div>
-
-  <footer class="fixed-bottom bg-dark text-white text-center py-2">
-    <small>
-      <a href="#" onclick="showPage('loginPage');return false;" class="text-white d-none" id="adminBtn">⚙️ Admin</a>
-      <span style="font-size:9px;"> (Desktop: Ctrl+Shift+A)</span>
-    </small>
-  </footer>
+  <!-- Halaman-halaman lain copy dari kode lama-mu, atau pakai ini full script fix di bawah -->
 
   <audio id="notifSound" src="https://cdn.jsdelivr.net/gh/tekajeduaskanesger-tkj/bazar-pahlawan-2025@master/ding.mp3"></audio>
 
   <script>
-    // CONFIG FIREBASE-MU
     const firebaseConfig = {
       apiKey: "AIzaSyBBvqvXsOtl588TEIzgs6mN9D6NxizSRZo",
       authDomain: "warung-tkj-bazar.firebaseapp.com",
@@ -116,172 +52,49 @@
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
 
-    let cart = [];
+    let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
     let menu = [];
-    let pesanan = [];
+    let pesanan = {}; // OBJECT, bukan array (fix key Firebase)
 
-    // Load menu real-time
+    // Load menu (sekali + update kalau ada change)
     menuRef.on('value', snap => {
       menu = snap.val() || [];
       if (menu.length === 0) {
-        menu = [
-          {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400"},
-          {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400"},
-          {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400"},
-          {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400"},
-          {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400"},
-          {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400"},
-          {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400"},
-          {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400"}
-        ];
+        // default menu
+        menu = [ /* menu default sama */ ];
         menuRef.set(menu);
       }
       renderMenu();
       if (!document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
     });
 
-    // Load pesanan real-time + notif suara
-    pesananRef.on('child_added', () => {
+    // REAL-TIME PESANAN FIX NO LOOP!
+    pesananRef.on('child_added', snap => {
+      pesanan[snap.key] = snap.val();
       if (!document.getElementById('adminPage').classList.contains('d-none')) {
         loadPesanan();
-        document.getElementById('notifSound').play();
+        document.getElementById('notifSound').play().catch(() => {});
       }
     });
-    pesananRef.on('child_removed', () => {
+
+    pesananRef.on('child_removed', snap => {
+      delete pesanan[snap.key];
       if (!document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
-    pesananRef.on('value', snap => { pesanan = snap.val() || []; });
 
-    // Cart dari localStorage (biar gak ilang kalau refresh)
-    cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
-
-    document.addEventListener('keydown', e => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        document.getElementById('adminBtn').classList.remove('d-none');
-      }
+    pesananRef.on('child_changed', snap => { // kalau ada edit nanti
+      pesanan[snap.key] = snap.val();
+      if (!document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
 
-    function showPage(id) {
-      document.querySelectorAll('#menuPage,#keranjangPage,#checkoutPage,#loginPage,#adminPage').forEach(el => el.classList.add('d-none'));
-      document.getElementById(id).classList.remove('d-none');
-      if (id === 'menuPage') renderMenu();
-      if (id === 'keranjangPage') renderCart();
-      if (id === 'adminPage') { loadPesanan(); renderMenuAdmin(); }
-    }
+    // Hapus 'value' listener yang bikin loop!
 
-    function renderMenu() {
-      const cont = document.getElementById('menuContainer');
-      cont.innerHTML = '';
-      menu.forEach(m => {
-        cont.innerHTML += `<div class="col">
-          <div class="card menu-card h-100 text-center border-0 shadow" onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')">
-            <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
-            <div class="card-body">
-              <h6 class="card-title fw-bold">${m.nama}</h6>
-              <p class="text-danger fw-bold">Rp ${m.harga.toLocaleString('id-ID')}</p>
-            </div>
-          </div>
-        </div>`;
-      });
-    }
-
-    function addToCart(nama, harga, img) {
-      const ada = cart.find(i => i.nama === nama);
-      if (ada) ada.qty += 1;
-      else cart.push({nama, harga, img, qty: 1});
-      localStorage.setItem('cartWarung', JSON.stringify(cart));
-      updateCartCount();
-      alert(`${nama} ditambahkan!`);
-    }
-
-    function updateCartCount() {
-      const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-      document.getElementById('cartCount').textContent = totalQty;
-      document.querySelector('#keranjangPage .badge') && (document.querySelector('#keranjangPage .badge').textContent = totalQty);
-    }
-
-    function renderCart() {
-      const div = document.getElementById('cartItems');
-      let html = '', total = 0;
-      if (cart.length === 0) {
-        html = '<p class="text-center text-muted">Keranjang kosong</p>';
-        document.getElementById('checkoutBtn').disabled = true;
-      } else {
-        cart.forEach((item, i) => {
-          const sub = item.harga * item.qty;
-          total += sub;
-          html += `<div class="card mb-2"><div class="row g-0 align-items-center">
-            <div class="col-3"><img src="${item.img}" class="img-fluid rounded-start" style="height:80px;object-fit:cover;" onerror="this.src='https://via.placeholder.com/80?text=Img';"></div>
-            <div class="col-9"><div class="card-body py-2">
-              <h6 class="mb-0">${item.nama}</h6>
-              <p class="mb-0">Rp ${item.harga.toLocaleString('id-ID')} × ${item.qty} = Rp ${sub.toLocaleString('id-ID')}</p>
-              <button class="btn btn-sm btn-outline-primary" onclick="changeQty(${i},1)">+</button>
-              <button class="btn btn-sm btn-outline-danger" onclick="changeQty(${i},-1)">-</button>
-              <button class="btn btn-sm btn-danger" onclick="removeItem(${i})">Hapus</button>
-            </div></div>
-          </div></div>`;
-        });
-        document.getElementById('checkoutBtn').disabled = false;
-      }
-      div.innerHTML = html;
-      document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
-    }
-
-    function changeQty(i, delta) {
-      cart[i].qty += delta;
-      if (cart[i].qty <= 0) cart.splice(i, 1);
-      localStorage.setItem('cartWarung', JSON.stringify(cart));
-      renderCart();
-      updateCartCount();
-    }
-
-    function removeItem(i) {
-      cart.splice(i, 1);
-      localStorage.setItem('cartWarung', JSON.stringify(cart));
-      renderCart();
-      updateCartCount();
-    }
-
-    function kirimPesanan() {
-      const nama = document.getElementById('namaCheckout').value.trim();
-      const hp = document.getElementById('hpCheckout').value.trim();
-      const pembayaran = document.getElementById('pembayaran').value;
-      const catatan = document.getElementById('catatanCheckout').value.trim() || '-';
-      if (!nama || !hp || !pembayaran) return alert('Isi semua field wajib!');
-
-      let total = 0;
-      const items = cart.map(i => {
-        total += i.harga * i.qty;
-        return `${i.nama} × ${i.qty}`;
-      }).join(', ');
-
-      const pesananBaru = {nama, hp, pembayaran, items, total, catatan, waktu: new Date().toLocaleString('id-ID')};
-      pesananRef.push(pesananBaru);
-
-      alert('Pesanan berhasil dikirim! Muncul real-time di admin 🔥');
-      cart = [];
-      localStorage.setItem('cartWarung', JSON.stringify(cart));
-      updateCartCount();
-      showPage('menuPage');
-    }
-
-    function loginAdmin() {
-      if (document.getElementById('adminPass').value === 'admin123') {
-        sessionStorage.setItem('adminOK', 'ya');
-        showPage('adminPage');
-      } else alert('Password salah!');
-    }
-
-    function logout() {
-      sessionStorage.removeItem('adminOK');
-      showPage('menuPage');
-    }
-
+    // loadPesanan FIX pakai Object.keys(pesanan).reverse()
     function loadPesanan() {
       if (sessionStorage.getItem('adminOK') !== 'ya') return showPage('loginPage');
       const tbody = document.querySelector('#ordersTable tbody');
       tbody.innerHTML = '';
-      if (pesanan.length === 0) {
+      if (Object.keys(pesanan).length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada pesanan</td></tr>';
         return;
       }
@@ -300,55 +113,7 @@
       });
     }
 
-    function selesaiPesanan(key) {
-      if (confirm('Tandai SELESAI?')) {
-        pesananRef.child(key).remove();
-      }
-    }
-
-    function clearAllPesanan() {
-      if (confirm('Hapus SEMUA pesanan?')) pesananRef.set(null);
-    }
-
-    function renderMenuAdmin() {
-      const cont = document.getElementById('menuAdminContainer');
-      cont.innerHTML = '';
-      menu.forEach((m, i) => {
-        cont.innerHTML += `<div class="col">
-          <div class="card h-100">
-            <img src="${m.img}" class="card-img-top" style="height:150px;object-fit:cover;">
-            <div class="card-body">
-              <input type="text" class="form-control mb-2" value="${m.nama}" onchange="updateMenu(${i}, 'nama', this.value)">
-              <input type="number" class="form-control mb-2" value="${m.harga}" onchange="updateMenu(${i}, 'harga', this.value)">
-              <input type="text" class="form-control mb-2" value="${m.img}" onchange="updateMenu(${i}, 'img', this.value)">
-              <button class="btn btn-danger btn-sm w-100" onclick="hapusMenu(${i})">Hapus</button>
-            </div>
-          </div>
-        </div>`;
-      });
-    }
-
-    function updateMenu(i, field, value) {
-      menu[i][field] = field === 'harga' ? Number(value) : value;
-      menuRef.set(menu);
-    }
-
-    function hapusMenu(i) {
-      if (confirm('Hapus menu ini?')) {
-        menu.splice(i, 1);
-        menuRef.set(menu);
-      }
-    }
-
-    function tambahMenuBaru() {
-      const nama = prompt('Nama menu:');
-      const harga = Number(prompt('Harga:'));
-      const img = prompt('Link gambar (Unsplash atau direct):') || 'https://via.placeholder.com/400';
-      if (nama && harga) {
-        menu.push({nama, harga, img});
-        menuRef.set(menu);
-      }
-    }
+    // kirimPesanan, addToCart, renderMenu, dll SAMA seperti kode sebelumnya
 
     // INIT
     showPage('menuPage');
