@@ -90,11 +90,14 @@
   <audio id="notifSound" preload="auto">
     <source src="https://cdn.jsdelivr.net/gh/fawmi/ivt-notif@master/ding.mp3" type="audio/mpeg">
   </audio>
-  <!-- Firebase SDK v9 compat (lebih stabil & tidak loop refresh) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <!-- Firebase SDK v8 (PALING STABIL, TIDAK BOOTLOOP DI HP APAPUN) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBBvqvXsOtl588TEIzgs6mN9D6NxizSRZo",
       authDomain: "warung-tkj-bazar.firebaseapp.com",
@@ -105,17 +108,21 @@
       appId: "1:150690959041:web:cc6aa147cf122df3694e40",
       measurementId: "G-80L8N95QFL"
     };
+
+    // Init Firebase v8
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const storage = firebase.storage();
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
+
     let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
     let menu = [];
     let pesanan = {};
-    // Menu real-time
-    menuRef.on('value', (snap) => {
-      menu = snap.val() || [];
+
+    // Listener menu dengan error handling
+    menuRef.on('value', (snapshot) => {
+      menu = snapshot.val() || [];
       if (menu.length === 0) {
         menu = [
           {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400"},
@@ -130,27 +137,37 @@
         menuRef.set(menu);
       }
       renderMenu();
-      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
+      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
+        renderMenuAdmin();
+      }
     }, (error) => {
-      console.error("Menu load error:", error);
-      alert("Gagal load menu: " + error.message);
+      console.error(error);
+      document.getElementById('menuContainer').innerHTML = '<p class="text-danger">Gagal load menu: ' + error.message + '</p>';
     });
-    // Pesanan real-time
-    pesananRef.on('child_added', (snap) => {
-      pesanan[snap.key] = snap.val();
+
+    // Listener pesanan
+    pesananRef.on('child_added', (snapshot) => {
+      pesanan[snapshot.key] = snapshot.val();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
         loadPesanan();
         document.getElementById('notifSound').play().catch(() => {});
       }
     });
-    pesananRef.on('child_removed', (snap) => {
-      delete pesanan[snap.key];
-      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
+
+    pesananRef.on('child_removed', (snapshot) => {
+      delete pesanan[snapshot.key];
+      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
+        loadPesanan();
+      }
     });
+
     // Shortcut admin
     document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') document.getElementById('adminBtn').classList.remove('d-none');
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        document.getElementById('adminBtn').classList.remove('d-none');
+      }
     });
+
     function showPage(id) {
       document.querySelectorAll('#menuPage, #keranjangPage, #checkoutPage, #loginPage, #adminPage').forEach(el => el.classList.add('d-none'));
       document.getElementById(id).classList.remove('d-none');
@@ -158,6 +175,7 @@
       if (id === 'keranjangPage') renderCart();
       if (id === 'adminPage') { loadPesanan(); renderMenuAdmin(); }
     }
+
     function renderMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
@@ -173,6 +191,7 @@
         </div>`;
       });
     }
+
     function addToCart(nama, harga, img) {
       const ada = cart.find(i => i.nama === nama);
       if (ada) ada.qty += 1;
@@ -181,10 +200,12 @@
       updateCartCount();
       alert(nama + ' ditambahkan ke keranjang!');
     }
+
     function updateCartCount() {
       const totalQty = cart.reduce((s, i) => s + i.qty, 0);
       document.getElementById('cartCount').textContent = totalQty || '0';
     }
+
     function renderCart() {
       const itemsDiv = document.getElementById('cartItems');
       let html = '';
@@ -216,6 +237,7 @@
       itemsDiv.innerHTML = html;
       document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
     }
+
     function changeQty(idx, delta) {
       cart[idx].qty += delta;
       if (cart[idx].qty <= 0) cart.splice(idx, 1);
@@ -223,12 +245,14 @@
       renderCart();
       updateCartCount();
     }
+
     function removeItem(idx) {
       cart.splice(idx, 1);
       localStorage.setItem('cartWarung', JSON.stringify(cart));
       renderCart();
       updateCartCount();
     }
+
     function kirimPesanan() {
       const nama = document.getElementById('namaCheckout').value.trim();
       const hp = document.getElementById('hpCheckout').value.trim();
@@ -251,16 +275,19 @@
       updateCartCount();
       showPage('menuPage');
     }
+
     function loginAdmin() {
       if (document.getElementById('adminPass').value === 'admintkj') {
         sessionStorage.setItem('adminOK', 'ya');
         showPage('adminPage');
       } else alert('Password salah!');
     }
+
     function logout() {
       sessionStorage.removeItem('adminOK');
       showPage('menuPage');
     }
+
     function loadPesanan() {
       if (sessionStorage.getItem('adminOK') !== 'ya') return showPage('loginPage');
       const tbody = document.querySelector('#ordersTable tbody');
@@ -283,12 +310,15 @@
         </tr>`;
       });
     }
+
     function selesaiPesanan(key) {
       if (confirm('Tandai selesai?')) pesananRef.child(key).remove();
     }
+
     function clearAllPesanan() {
       if (confirm('Hapus SEMUA pesanan?')) pesananRef.set(null);
     }
+
     function renderMenuAdmin() {
       const cont = document.getElementById('menuAdminContainer');
       cont.innerHTML = '';
@@ -309,54 +339,66 @@
         </div>`;
       });
     }
+
     function triggerUpload(i) {
-      document.getElementById('fileInput'+i).click();
+      document.getElementById('fileInput' + i).click();
     }
+
     function uploadFotoMenu(i) {
-      const file = document.getElementById('fileInput'+i).files[0];
+      const fileInput = document.getElementById('fileInput' + i);
+      const file = fileInput.files[0];
       if (!file) return;
-      if (file.size > 10 * 1024 * 1024) return alert('File max 10MB!');
-      const progressDiv = document.getElementById('progress'+i);
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File terlalu besar! Max 10MB');
+        return;
+      }
+      const progressDiv = document.getElementById('progress' + i);
       progressDiv.innerHTML = '⏳ Uploading 0%...';
+
       const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
       const storageRef = storage.ref('menu-foto/' + fileName);
-      const task = storageRef.put(file);
-      task.on('state_changed',
+      const uploadTask = storageRef.put(file);
+
+      uploadTask.on('state_changed',
         (snapshot) => {
           const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
           progressDiv.innerHTML = `⏳ Uploading ${percent}%`;
         },
         (error) => {
-          progressDiv.innerHTML = '❌ Gagal!';
+          progressDiv.innerHTML = '❌ Gagal upload!';
           alert('Upload gagal: ' + error.message);
+          console.error(error);
         },
         () => {
-          task.snapshot.ref.getDownloadURL().then((url) => {
-            menu[i].img = url;
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            menu[i].img = downloadURL;
             menuRef.set(menu).then(() => {
-              document.getElementById('imgLink'+i).value = url;
-              progressDiv.innerHTML = '✅ Sukses!';
-              setTimeout(() => progressDiv.innerHTML = '', 3000);
-              alert('Foto berhasil diupload! 🚀');
+              document.getElementById('imgLink' + i).value = downloadURL;
+              progressDiv.innerHTML = '✅ Sukses! Foto sudah masuk!';
+              setTimeout(() => { progressDiv.innerHTML = ''; }, 5000);
+              alert('Foto berhasil diupload & langsung muncul di menu! 🚀');
             }).catch((err) => {
-              progressDiv.innerHTML = '❌ Save DB gagal!';
+              progressDiv.innerHTML = '❌ Gagal simpan DB!';
               alert('Gagal simpan ke database: ' + err.message);
             });
           });
         }
       );
     }
+
     function updateMenu(i, field, value) {
       if (field === 'harga' && isNaN(value)) return;
       menu[i][field] = field === 'harga' ? value : value;
       menuRef.set(menu);
     }
+
     function hapusMenu(i) {
       if (confirm('Hapus menu ini?')) {
         menu.splice(i, 1);
         menuRef.set(menu);
       }
     }
+
     function tambahMenuBaru() {
       const nama = prompt('Nama menu baru:');
       const harga = parseInt(prompt('Harga:'));
@@ -365,6 +407,7 @@
         menuRef.set(menu);
       }
     }
+
     // INIT
     updateCartCount();
     showPage('menuPage');
