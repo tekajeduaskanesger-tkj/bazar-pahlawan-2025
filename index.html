@@ -19,7 +19,7 @@
 <body>
   <div class="bg-danger text-white py-3 sticky-top shadow">
     <div class="container d-flex justify-content-between align-items-center">
-      <h3 class="mb-0">🍔 WARUNG MAKAN ENAK</h3>
+      <h3 class="mb-0">🇮🇩 BAZZAR XI TKJ 2 CUT MEUTIA 🇮🇩</h3>
       <button class="btn btn-warning rounded-circle shadow position-relative" onclick="showPage('keranjangPage')">
         <i class="bi bi-cart-fill"></i> 
         <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">0</span>
@@ -64,7 +64,7 @@
       <div class="card-body">
         <input type="password" id="adminPass" class="form-control mb-3" placeholder="Password">
         <button class="btn btn-primary w-100" onclick="loginAdmin()">Login</button>
-        <small class="text-muted d-block text-center mt-2">Default: admin123</small>
+        <small class="text-muted d-block text-center mt-2">Default: admintkj</small>
       </div>
     </div>
   </div>
@@ -83,7 +83,7 @@
         <tbody><tr><td colspan="8" class="text-center">Loading pesanan...</td></tr></tbody>
       </table>
     </div>
-    <h4>Atur Menu (ubah langsung → semua device update otomatis)</h4>
+    <h4>MENU TERKINI ⬇️⬇️</h4>
     <div id="menuAdminContainer" class="row row-cols-2 row-cols-md-4 g-4">Loading...</div>
   </div>
 
@@ -271,7 +271,7 @@
     }
 
     function loginAdmin() {
-      if (document.getElementById('adminPass').value === 'admin123') {
+      if (document.getElementById('adminPass').value === 'admintkj') {
         sessionStorage.setItem('adminOK', 'ya');
         showPage('adminPage');
       } else alert('Password salah!');
