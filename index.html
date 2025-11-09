@@ -90,10 +90,10 @@
   <audio id="notifSound" preload="auto">
     <source src="https://cdn.jsdelivr.net/gh/fawmi/ivt-notif@master/ding.mp3" type="audio/mpeg">
   </audio>
-  <!-- Firebase SDK - URUTAN DIPERBAIKI -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <!-- Firebase SDK v9 compat (lebih stabil & tidak loop refresh) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBBvqvXsOtl588TEIzgs6mN9D6NxizSRZo",
@@ -131,8 +131,11 @@
       }
       renderMenu();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
+    }, (error) => {
+      console.error("Menu load error:", error);
+      alert("Gagal load menu: " + error.message);
     });
-    // Pesanan real-time NO LOOP
+    // Pesanan real-time
     pesananRef.on('child_added', (snap) => {
       pesanan[snap.key] = snap.val();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
@@ -314,31 +317,37 @@
       if (!file) return;
       if (file.size > 10 * 1024 * 1024) return alert('File max 10MB!');
       const progressDiv = document.getElementById('progress'+i);
-      progressDiv.innerHTML = '⏳ Uploading...';
-      const storageRef = storage.ref('menu-foto/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_'));
+      progressDiv.innerHTML = '⏳ Uploading 0%...';
+      const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      const storageRef = storage.ref('menu-foto/' + fileName);
       const task = storageRef.put(file);
       task.on('state_changed',
         (snapshot) => {
-          const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          progressDiv.innerHTML = `⏳ ${Math.round(percent)}%`;
+          const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          progressDiv.innerHTML = `⏳ Uploading ${percent}%`;
         },
         (error) => {
-          progressDiv.innerHTML = '❌ Gagal: ' + error.message;
+          progressDiv.innerHTML = '❌ Gagal!';
           alert('Upload gagal: ' + error.message);
         },
         () => {
           task.snapshot.ref.getDownloadURL().then((url) => {
             menu[i].img = url;
-            menuRef.set(menu);
-            document.getElementById('imgLink'+i).value = url;
-            progressDiv.innerHTML = '✅ Sukses!';
-            setTimeout(() => progressDiv.innerHTML = '', 3000);
-            alert('Foto berhasil diupload! 🚀');
+            menuRef.set(menu).then(() => {
+              document.getElementById('imgLink'+i).value = url;
+              progressDiv.innerHTML = '✅ Sukses!';
+              setTimeout(() => progressDiv.innerHTML = '', 3000);
+              alert('Foto berhasil diupload! 🚀');
+            }).catch((err) => {
+              progressDiv.innerHTML = '❌ Save DB gagal!';
+              alert('Gagal simpan ke database: ' + err.message);
+            });
           });
         }
       );
     }
     function updateMenu(i, field, value) {
+      if (field === 'harga' && isNaN(value)) return;
       menu[i][field] = field === 'harga' ? value : value;
       menuRef.set(menu);
     }
