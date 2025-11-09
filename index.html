@@ -88,12 +88,12 @@
     </small>
   </footer>
   <audio id="notifSound" preload="auto">
-    <source src="https://cdn.jsdelivr.net/gh/fawmi/212.mp3" type="audio/mpeg">
+    <source src="https://cdn.jsdelivr.net/gh/fawmi/ivt-notif@master/ding.mp3" type="audio/mpeg">
   </audio>
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK - URUTAN DIPERBAIKI -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script> <!-- BARU: Storage SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBBvqvXsOtl588TEIzgs6mN9D6NxizSRZo",
@@ -107,7 +107,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const storage = firebase.storage(); // BARU: Storage ref
+    const storage = firebase.storage();
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
     let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
@@ -122,7 +122,7 @@
           {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400"},
           {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400"},
           {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400"},
-          {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18 b007d5895c?w=400"},
+          {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400"},
           {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400"},
           {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400"},
           {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400"}
@@ -296,8 +296,9 @@
             <div class="card-body">
               <input type="text" class="form-control mb-2" value="${m.nama}" onchange="updateMenu(${i}, 'nama', this.value)">
               <input type="number" class="form-control mb-2" value="${m.harga}" onchange="updateMenu(${i}, 'harga', parseInt(this.value))">
-              <input type="text" class="form-control mb-2" value="${m.img}" id="imgLink${i}">
+              <input type="text" class="form-control mb-2" value="${m.img}" id="imgLink${i}" readonly>
               <button class="btn btn-warning btn-sm w-100 mb-2" onclick="triggerUpload(${i})">📷 Upload Foto Baru</button>
+              <div id="progress${i}" class="text-center text-primary mb-2"></div>
               <input type="file" id="fileInput${i}" accept="image/*" style="display:none;" onchange="uploadFotoMenu(${i})">
               <button class="btn btn-danger btn-sm w-100" onclick="hapusMenu(${i})">Hapus</button>
             </div>
@@ -305,25 +306,34 @@
         </div>`;
       });
     }
-    // BARU: Trigger upload
     function triggerUpload(i) {
       document.getElementById('fileInput'+i).click();
     }
-    // BARU: Upload ke Firebase Storage
     function uploadFotoMenu(i) {
       const file = document.getElementById('fileInput'+i).files[0];
       if (!file) return;
-      const storageRef = storage.ref('menu-foto/' + Date.now() + '_' + file.name);
+      if (file.size > 10 * 1024 * 1024) return alert('File max 10MB!');
+      const progressDiv = document.getElementById('progress'+i);
+      progressDiv.innerHTML = '⏳ Uploading...';
+      const storageRef = storage.ref('menu-foto/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_'));
       const task = storageRef.put(file);
-      task.on('state_changed', 
-        (snapshot) => { /* progress optional */ },
-        (error) => { alert('Upload gagal: ' + error.message); },
+      task.on('state_changed',
+        (snapshot) => {
+          const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          progressDiv.innerHTML = `⏳ ${Math.round(percent)}%`;
+        },
+        (error) => {
+          progressDiv.innerHTML = '❌ Gagal: ' + error.message;
+          alert('Upload gagal: ' + error.message);
+        },
         () => {
           task.snapshot.ref.getDownloadURL().then((url) => {
             menu[i].img = url;
             menuRef.set(menu);
             document.getElementById('imgLink'+i).value = url;
-            alert('Foto berhasil diupload & diperbarui! 🚀');
+            progressDiv.innerHTML = '✅ Sukses!';
+            setTimeout(() => progressDiv.innerHTML = '', 3000);
+            alert('Foto berhasil diupload! 🚀');
           });
         }
       );
