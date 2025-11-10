@@ -21,23 +21,20 @@
     <div class="container d-flex justify-content-between align-items-center">
       <h3 class="mb-0">🇮🇩 BAZZAR XI TKJ 2 CUT MEUTIA 🇮🇩</h3>
       <button class="btn btn-warning rounded-circle shadow position-relative" onclick="showPage('keranjangPage')">
-        <i class="bi bi-cart-fill"></i> 
+        <i class="bi bi-cart-fill"></i>
         <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">0</span>
       </button>
     </div>
   </div>
-
   <div class="container mt-4" id="menuPage">
     <div class="row row-cols-2 row-cols-md-4 g-4" id="menuContainer">Loading menu...</div>
   </div>
-
   <div class="container mt-5 d-none" id="keranjangPage">
     <h3>Keranjang Belanja <span id="cartTotal" class="text-danger fw-bold">Rp 0</span></h3>
     <div id="cartItems"></div>
     <button class="btn btn-success w-100 mt-3 fw-bold" onclick="showPage('checkoutPage')" id="checkoutBtn" disabled>Lanjut Checkout</button>
     <button class="btn btn-secondary w-100 mt-2" onclick="showPage('menuPage')">Tambah Menu Lagi</button>
   </div>
-
   <div class="container mt-5 d-none" id="checkoutPage">
     <div class="card shadow">
       <div class="card-header bg-success text-white text-center"><h4>Checkout Pesanan</h4></div>
@@ -57,7 +54,6 @@
     </div>
     <p class="text-center text-success fw-bold mt-3">Pesanan masuk real-time ke kasir!</p>
   </div>
-
   <div class="container mt-5 d-none" id="loginPage">
     <div class="card mx-auto shadow" style="max-width:400px;">
       <div class="card-header bg-dark text-white text-center"><h4>🔐 Login Admin</h4></div>
@@ -68,7 +64,6 @@
       </div>
     </div>
   </div>
-
   <div class="container mt-4 d-none" id="adminPage">
     <h2 class="text-danger fw-bold">📊 Dashboard Admin
       <button onclick="logout()" class="btn btn-danger btn-sm float-end">Logout</button>
@@ -86,22 +81,18 @@
     <h4>MENU TERKINI ⬇️⬇️</h4>
     <div id="menuAdminContainer" class="row row-cols-2 row-cols-md-4 g-4">Loading...</div>
   </div>
-
   <footer class="fixed-bottom bg-dark text-white text-center py-2">
     <small>
       <a href="#" onclick="showPage('loginPage');return false;" class="text-white d-none" id="adminBtn">⚙️ Admin</a>
-      <span style="font-size:9px;"> (Desktop: Ctrl+Shift+A)</span>
+      <span style="font-size:9px;"> (Desktop: Ctrl+Y)</span>
     </small>
   </footer>
-
   <audio id="notifSound" preload="auto">
     <source src="https://cdn.jsdelivr.net/gh/fawmi/ivt-notif@master/ding.mp3" type="audio/mpeg">
   </audio>
-
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBBvqvXsOtl588TEIzgs6mN9D6NxizSRZo",
@@ -113,16 +104,13 @@
       appId: "1:150690959041:web:cc6aa147cf122df3694e40",
       measurementId: "G-80L8N95QFL"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
-
     let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
     let menu = [];
     let pesanan = {};
-
     // Menu real-time
     menuRef.on('value', (snap) => {
       menu = snap.val() || [];
@@ -142,7 +130,6 @@
       renderMenu();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
     });
-
     // Pesanan real-time NO LOOP
     pesananRef.on('child_added', (snap) => {
       pesanan[snap.key] = snap.val();
@@ -151,17 +138,14 @@
         document.getElementById('notifSound').play().catch(() => {});
       }
     });
-
     pesananRef.on('child_removed', (snap) => {
       delete pesanan[snap.key];
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
-
     // Shortcut admin
     document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') document.getElementById('adminBtn').classList.remove('d-none');
+      if (e.ctrlKey && e.key === 'Y') document.getElementById('adminBtn').classList.remove('d-none');
     });
-
     function showPage(id) {
       document.querySelectorAll('#menuPage, #keranjangPage, #checkoutPage, #loginPage, #adminPage').forEach(el => el.classList.add('d-none'));
       document.getElementById(id).classList.remove('d-none');
@@ -169,7 +153,6 @@
       if (id === 'keranjangPage') renderCart();
       if (id === 'adminPage') { loadPesanan(); renderMenuAdmin(); }
     }
-
     function renderMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
@@ -185,7 +168,6 @@
         </div>`;
       });
     }
-
     function addToCart(nama, harga, img) {
       const ada = cart.find(i => i.nama === nama);
       if (ada) ada.qty += 1;
@@ -194,12 +176,10 @@
       updateCartCount();
       alert(nama + ' ditambahkan ke keranjang!');
     }
-
     function updateCartCount() {
       const totalQty = cart.reduce((s, i) => s + i.qty, 0);
       document.getElementById('cartCount').textContent = totalQty || '0';
     }
-
     function renderCart() {
       const itemsDiv = document.getElementById('cartItems');
       let html = '';
@@ -231,7 +211,6 @@
       itemsDiv.innerHTML = html;
       document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
     }
-
     function changeQty(idx, delta) {
       cart[idx].qty += delta;
       if (cart[idx].qty <= 0) cart.splice(idx, 1);
@@ -239,14 +218,12 @@
       renderCart();
       updateCartCount();
     }
-
     function removeItem(idx) {
       cart.splice(idx, 1);
       localStorage.setItem('cartWarung', JSON.stringify(cart));
       renderCart();
       updateCartCount();
     }
-
     function kirimPesanan() {
       const nama = document.getElementById('namaCheckout').value.trim();
       const hp = document.getElementById('hpCheckout').value.trim();
@@ -269,19 +246,16 @@
       updateCartCount();
       showPage('menuPage');
     }
-
     function loginAdmin() {
       if (document.getElementById('adminPass').value === 'admintkj') {
         sessionStorage.setItem('adminOK', 'ya');
         showPage('adminPage');
       } else alert('Password salah!');
     }
-
     function logout() {
       sessionStorage.removeItem('adminOK');
       showPage('menuPage');
     }
-
     function loadPesanan() {
       if (sessionStorage.getItem('adminOK') !== 'ya') return showPage('loginPage');
       const tbody = document.querySelector('#ordersTable tbody');
@@ -304,15 +278,12 @@
         </tr>`;
       });
     }
-
     function selesaiPesanan(key) {
       if (confirm('Tandai selesai?')) pesananRef.child(key).remove();
     }
-
     function clearAllPesanan() {
       if (confirm('Hapus SEMUA pesanan?')) pesananRef.set(null);
     }
-
     function renderMenuAdmin() {
       const cont = document.getElementById('menuAdminContainer');
       cont.innerHTML = '';
@@ -330,19 +301,16 @@
         </div>`;
       });
     }
-
     function updateMenu(i, field, value) {
       menu[i][field] = field === 'harga' ? value : value;
       menuRef.set(menu);
     }
-
     function hapusMenu(i) {
       if (confirm('Hapus menu ini?')) {
         menu.splice(i, 1);
         menuRef.set(menu);
       }
     }
-
     function tambahMenuBaru() {
       const nama = prompt('Nama menu baru:');
       const harga = parseInt(prompt('Harga:'));
@@ -352,7 +320,6 @@
         menuRef.set(menu);
       }
     }
-
     // INIT
     updateCartCount();
     showPage('menuPage');
