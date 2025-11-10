@@ -14,8 +14,6 @@
     .d-none { display: none !important; }
     #notifSound { display: none; }
     .total-card { font-size: 1.5rem; }
-    .status-dimasak { background-color: #fff3cd !important; }
-    .status-siap { background-color: #d4edda !important; }
   </style>
 </head>
 <body>
@@ -97,9 +95,9 @@
       <div class="table-responsive mb-4">
         <table class="table table-striped" id="ordersTable">
           <thead class="table-dark">
-            <tr><th>No</th><th>Status</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Catatan</th><th>Waktu</th><th>Aksi</th></tr>
+            <tr><th>No</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Catatan</th><th>Waktu</th><th>Aksi</th></tr>
           </thead>
-          <tbody><tr><td colspan="10" class="text-center">Loading pesanan...</td></tr></tbody>
+          <tbody><tr><td colspan="9" class="text-center">Loading pesanan...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -194,7 +192,7 @@
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
     });
 
-    // History real-time
+    // History real-time (untuk hitung pendapatan)
     historyRef.on('value', (snap) => {
       history = snap.val() || {};
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
@@ -210,10 +208,6 @@
         loadPesanan();
         document.getElementById('notifSound').play().catch(() => {});
       }
-    });
-    pesananRef.on('child_changed', (snap) => {
-      pesanan[snap.key] = snap.val();
-      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
     pesananRef.on('child_removed', (snap) => {
       delete pesanan[snap.key];
@@ -236,6 +230,7 @@
       const dibayar = parseInt(document.getElementById('dibayarCalc').value) || 0;
       const kembalian = dibayar - tagihan;
       document.getElementById('kembalianCalc').value = kembalian >= 0 ? kembalian : 0;
+      document.getElementById('kembalianCalc').style.color = kembalian >= 0 ? 'green' : 'red';
     }
 
     function setTagihan(total) {
@@ -357,9 +352,8 @@
         return `${i.nama} × ${i.qty}`;
       }).join(', ');
       const pesananBaru = {
-        nama, hp, pemb bayaran, items, total, catatan,
-        waktu: new Date().toLocaleString('id-ID'),
-        status: 'baru' // default baru
+        nama, hp, pembayaran, items, total, catatan,
+        waktu: new Date().toLocaleString('id-ID')
       };
       pesananRef.push(pesananBaru);
       alert('Pesanan terkirim! Kasir langsung terima 🔥');
@@ -386,17 +380,13 @@
       const tbody = document.querySelector('#ordersTable tbody');
       tbody.innerHTML = '';
       if (Object.keys(pesanan).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center">Belum ada pesanan</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Belum ada pesanan</td></tr>';
         return;
       }
       Object.keys(pesanan).reverse().forEach((key, i) => {
         const p = pesanan[key];
-        const rowClass = p.status === 'dimasak' ? 'status-dimasak' : (p.status === 'siap' ? 'status-siap' : '');
-        const statusText = p.status === 'dimasak' ? 'Sedang Dimasak' : (p.status === 'siap' ? 'Siap Diambil' : 'Pesanan Baru');
-        const statusBadge = p.status === 'dimasak' ? 'warning' : (p.status === 'siap' ? 'success' : 'secondary');
-        tbody.innerHTML += `<tr class="${rowClass}">
+        tbody.innerHTML += `<tr>
           <td>${i+1}</td>
-          <td><span class="badge bg-${statusBadge}">${statusText}</span></td>
           <td>${p.nama}</td>
           <td>${p.hp}</td>
           <td><span class="badge bg-${p.pembayaran.includes('Cash') ? 'success' : 'primary'}">${p.pembayaran}</span></td>
@@ -406,16 +396,10 @@
           <td>${p.waktu}</td>
           <td>
             <button class="btn btn-sm btn-info me-1" onclick="setTagihan(${p.total})" title="Hitung Kembalian">💰</button>
-            ${p.status !== 'dimasak' ? `<button class="btn btn-sm btn-warning me-1" onclick="setStatus('${key}', 'dimasak')">🍳 Dimasak</button>` : ''}
-            ${p.status !== 'siap' ? `<button class="btn btn-sm btn-primary me-1" onclick="setStatus('${key}', 'siap')">✔️ Siap</button>` : ''}
             <button class="btn btn-sm btn-success" onclick="selesaiPesanan('${key}')">SELESAI</button>
           </td>
         </tr>`;
       });
-    }
-
-    function setStatus(key, newStatus) {
-      pesananRef.child(key).update({status: newStatus});
     }
 
     function selesaiPesanan(key) {
