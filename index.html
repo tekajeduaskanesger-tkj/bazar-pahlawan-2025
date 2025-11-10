@@ -16,6 +16,21 @@
     .total-card { font-size: 1.5rem; }
     .status-dimasak { background-color: #fff3cd !important; }
     .status-siap { background-color: #d4edda !important; }
+    .menu-habis { opacity: 0.6; pointer-events: none; }
+    .menu-habis::after {
+      content: 'HABIS';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +100,34 @@
             <h3 id="totalPendapatan">Rp 0</h3>
           </div>
         </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-primary total-card">
+          <div class="card-body text-center">
+            <h4>Laba Kotor Hari Ini</h4>
+            <h3 id="labaKotor">Rp 0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-info total-card">
+          <div class="card-body text-center">
+            <h4>Laba Bersih Hari Ini</h4>
+            <h3 id="labaBersih">Rp 0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow mb-4">
+      <div class="card-header bg-dark text-white"><h5>💸 Input Modal Hari Ini (biaya bahan, listrik, dll)</h5></div>
+      <div class="card-body">
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          <input type="number" id="modalHariIni" class="form-control form-control-lg" placeholder="0" value="0">
+          <button class="btn btn-success" onclick="simpanModal()">Simpan Modal</button>
+        </div>
+        <small class="text-muted">Modal hari ini tersimpan otomatis di Firebase (real-time semua device)</small>
       </div>
     </div>
 
@@ -171,29 +214,33 @@
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
     const historyRef = db.ref('history');
+    const modalRef = db.ref('modalHariIni');
     let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
     let menu = [];
     let pesanan = {};
     let history = {};
     let totalPendapatanHariIni = 0;
+    let modalHariIni = 0;
 
     const defaultMenu = [
-      {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400"},
-      {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400"},
-      {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400"},
-      {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400"},
-      {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400"},
-      {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400"},
-      {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400"},
-      {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400"}
+      {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400", habis: false},
+      {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400", habis: false},
+      {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400", habis: false},
+      {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400", habis: false},
+      {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400", habis: false},
+      {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400", habis: false},
+      {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400", habis: false},
+      {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400", habis: false}
     ];
 
     function renderDefaultMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
       defaultMenu.forEach((m) => {
+        const habisClass = m.habis ? ' position-relative menu-habis' : '';
+        const onclick = m.habis ? '' : `onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')"`
         cont.innerHTML += `<div class="col">
-          <div class="card menu-card h-100 text-center border-0 shadow" onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')">
+          <div class="card menu-card h-100 text-center border-0 shadow${habisClass}" ${onclick}>
             <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
             <div class="card-body">
               <h6 class="card-title fw-bold">${m.nama}</h6>
@@ -207,7 +254,7 @@
     menuRef.on('value', (snap) => {
       const data = snap.val();
       if (data && Array.isArray(data) && data.length > 0) {
-        menu = data;
+        menu = data.map(m => ({...m, habis: m.habis || false}));
       } else {
         menu = defaultMenu;
       }
@@ -227,11 +274,18 @@
       }
     }, 5000);
 
+    modalRef.on('value', (snap) => {
+      modalHariIni = parseInt(snap.val()) || 0;
+      document.getElementById('modalHariIni').value = modalHariIni;
+      hitungLaba();
+    });
+
     historyRef.on('value', (snap) => {
       history = snap.val() || {};
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
         loadHistory();
         hitungPendapatanHariIni();
+        hitungLaba();
       }
     });
 
@@ -251,6 +305,12 @@
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
 
+    function simpanModal() {
+      const val = parseInt(document.getElementById('modalHariIni').value) || 0;
+      modalRef.set(val);
+      alert('Modal hari ini disimpan: Rp ' + val.toLocaleString('id-ID'));
+    }
+
     function hitungPendapatanHariIni() {
       const today = new Date().toLocaleDateString('id-ID');
       totalPendapatanHariIni = 0;
@@ -262,6 +322,13 @@
       document.getElementById('totalPendapatan').textContent = 'Rp ' + totalPendapatanHariIni.toLocaleString('id-ID');
     }
 
+    function hitungLaba() {
+      const labaKotor = totalPendapatanHariIni;
+      const labaBersih = labaKotor - modalHariIni;
+      document.getElementById('labaKotor').textContent = 'Rp ' + labaKotor.toLocaleString('id-ID');
+      document.getElementById('labaBersih').textContent = 'Rp ' + (labaBersih >= 0 ? labaBersih.toLocaleString('id-ID') : '0');
+    }
+
     function hitungKembalian() {
       const tagihan = parseInt(document.getElementById('tagihanCalc').value) || 0;
       const dibayar = parseInt(document.getElementById('dibayarCalc').value) || 0;
@@ -271,7 +338,7 @@
 
     function setTagihan(total) {
       document.getElementById('tagihanCalc').value = total;
-      document.getElementById('dibayarCalc').value = '';
+      document.dibayarCalc.value = '';
       document.getElementById('kembalianCalc').value = '0';
       hitungKembalian();
     }
@@ -295,6 +362,7 @@
         loadPesanan(); 
         loadHistory();
         hitungPendapatanHariIni();
+        hitungLaba();
         renderMenuAdmin(); 
       }
     }
@@ -303,8 +371,10 @@
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
       menu.forEach((m) => {
+        const habisClass = m.habis ? ' position-relative menu-habis' : '';
+        const onclick = m.habis ? '' : `onclick="addToCart('${m.nama.replace(/'/g, "\\'"}', ${m.harga}, '${m.img}')"`
         cont.innerHTML += `<div class="col">
-          <div class="card menu-card h-100 text-center border-0 shadow" onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')">
+          <div class="card menu-card h-100 text-center border-0 shadow${habisClass}" ${onclick}>
             <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
             <div class="card-body">
               <h6 class="card-title fw-bold">${m.nama}</h6>
@@ -316,6 +386,11 @@
     }
 
     function addToCart(nama, harga, img) {
+      const m = menu.find(i => i.nama === nama);
+      if (m && m.habis) {
+        alert('Maaf, ' + nama + ' sudah HABIS!');
+        return;
+      }
       const ada = cart.find(i => i.nama === nama);
       if (ada) ada.qty += 1;
       else cart.push({nama, harga, img, qty: 1});
@@ -346,7 +421,7 @@
               <div class="col-9">
                 <div class="card-body py-2">
                   <h6 class="mb-0">${item.nama}</h6>
-                  <p class="mb-0">Rp ${item.harga.toLocaleString('id-ID')} × ${item.qty} = Rp ${sub.toLocaleString('id-ID')}</p>
+                  <p class="mb-0">Rp ${item.harga.toLocaleString('id-ID')}', {style: 'currency', currency: 'IDR'})} × ${item.qty} = Rp ${sub.toLocaleString('id-ID')}</p>
                   <button class="btn btn-sm btn-outline-primary" onclick="changeQty(${idx},1)">+</button>
                   <button class="btn btn-sm btn-outline-danger" onclick="changeQty(${idx},-1)">-</button>
                   <button class="btn btn-sm btn-danger" onclick="removeItem(${idx})">Hapus</button>
@@ -466,6 +541,7 @@
 
     function clearHistory() {
       if (confirm('Hapus SEMUA history transaksi?')) historyRef.set(null);
+      modalRef.set(0);
     }
 
     function loadHistory() {
@@ -502,7 +578,11 @@
               <input type="text" class="form-control mb-2" value="${m.nama}" onchange="updateMenu(${i}, 'nama', this.value)">
               <input type="number" class="form-control mb-2" value="${m.harga}" onchange="updateMenu(${i}, 'harga', parseInt(this.value))">
               <input type="text" class="form-control mb-2" value="${m.img}" onchange="updateMenu(${i}, 'img', this.value)">
-              <button class="btn btn-danger btn-sm w-100" onclick="hapusMenu(${i})">Hapus</button>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" ${m.habis ? 'checked' : ''} onchange="updateMenu(${i}, 'habis', this.checked)">
+                <label class="form-check-label text-danger fw-bold">Tandai HABIS</label>
+              </div>
+              <button class="btn btn-danger btn-sm w-100 mt-2" onclick="hapusMenu(${i})">Hapus Menu</button>
             </div>
           </div>
         </div>`;
@@ -510,7 +590,9 @@
     }
 
     function updateMenu(i, field, value) {
-      menu[i][field] = field === 'harga' ? value : value;
+      if (field === 'harga') value = parseInt(value) || 0;
+      if (field === 'habis') value = !!value;
+      menu[i][field] = value;
       menuRef.set(menu);
     }
 
@@ -526,7 +608,7 @@
       const harga = parseInt(prompt('Harga:'));
       const img = prompt('Link gambar:') || 'https://via.placeholder.com/400';
       if (nama && harga) {
-        menu.push({nama, harga, img});
+        menu.push({nama, harga, img, habis: false});
         menuRef.set(menu);
       }
     }
