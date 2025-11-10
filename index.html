@@ -83,8 +83,7 @@
   </div>
   <footer class="fixed-bottom bg-dark text-white text-center py-2">
     <small>
-      <a href="#" onclick="showPage('loginPage');return false;" class="text-white d-none" id="adminBtn">⚙️ Admin</a>
-      <span style="font-size:9px;"> (Desktop: Ctrl+Y)</span>
+      <a href="#" onclick="showPage('loginPage');return false;" class="text-white" id="adminBtn">⚙️ Admin</a>
     </small>
   </footer>
   <audio id="notifSound" preload="auto">
@@ -141,10 +140,6 @@
     pesananRef.on('child_removed', (snap) => {
       delete pesanan[snap.key];
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
-    });
-    // Shortcut admin
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'Y') document.getElementById('adminBtn').classList.remove('d-none');
     });
     function showPage(id) {
       document.querySelectorAll('#menuPage, #keranjangPage, #checkoutPage, #loginPage, #adminPage').forEach(el => el.classList.add('d-none'));
