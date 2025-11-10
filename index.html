@@ -16,6 +16,21 @@
     .total-card { font-size: 1.5rem; }
     .status-dimasak { background-color: #fff3cd !important; }
     .status-siap { background-color: #d4edda !important; }
+    .menu-habis { opacity: 0.6; pointer-events: none; }
+    .menu-habis::after {
+      content: 'HABIS';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -208,22 +223,24 @@
     let modalHariIni = 0;
 
     const defaultMenu = [
-      {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400"},
-      {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400"},
-      {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400"},
-      {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400"},
-      {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400"},
-      {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400"},
-      {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400"},
-      {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400"}
+      {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400", habis: false},
+      {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400", habis: false},
+      {nama: "Soto Ayam", harga: 20000, img: "https://images.unsplash.com/photo-1546833999-b3596140c1be?w=400", habis: false},
+      {nama: "Ayam Geprek", harga: 28000, img: "https://images.unsplash.com/photo-1562967914-608f82629710?w=400", habis: false},
+      {nama: "Bakso Urat Jumbo", harga: 30000, img: "https://images.unsplash.com/photo-1604902396938-18b007d5895c?w=400", habis: false},
+      {nama: "Gado-Gado", harga: 18000, img: "https://images.unsplash.com/photo-1511690078903-71dc5a3e8ff5?w=400", habis: false},
+      {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400", habis: false},
+      {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400", habis: false}
     ];
 
     function renderDefaultMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
       defaultMenu.forEach((m) => {
+        const habisClass = m.habis ? ' position-relative menu-habis' : '';
+        const onclick = m.habis ? '' : `onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')"`
         cont.innerHTML += `<div class="col">
-          <div class="card menu-card h-100 text-center border-0 shadow" onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')">
+          <div class="card menu-card h-100 text-center border-0 shadow${habisClass}" ${onclick}>
             <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
             <div class="card-body">
               <h6 class="card-title fw-bold">${m.nama}</h6>
@@ -237,7 +254,7 @@
     menuRef.on('value', (snap) => {
       const data = snap.val();
       if (data && Array.isArray(data) && data.length > 0) {
-        menu = data;
+        menu = data.map(m => ({...m, habis: m.habis === true}));
       } else {
         menu = defaultMenu;
       }
@@ -354,8 +371,10 @@
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
       menu.forEach((m) => {
+        const habisClass = m.habis ? ' position-relative menu-habis' : '';
+        const onclick = m.habis ? '' : `onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')"`
         cont.innerHTML += `<div class="col">
-          <div class="card menu-card h-100 text-center border-0 shadow" onclick="addToCart('${m.nama.replace(/'/g, "\\'")}', ${m.harga}, '${m.img}')">
+          <div class="card menu-card h-100 text-center border-0 shadow${habisClass}" ${onclick}>
             <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
             <div class="card-body">
               <h6 class="card-title fw-bold">${m.nama}</h6>
@@ -367,6 +386,11 @@
     }
 
     function addToCart(nama, harga, img) {
+      const m = menu.find(i => i.nama === nama);
+      if (m && m.habis) {
+        alert('Maaf, ' + nama + ' sudah HABIS!');
+        return;
+      }
       const ada = cart.find(i => i.nama === nama);
       if (ada) ada.qty += 1;
       else cart.push({nama, harga, img, qty: 1});
@@ -516,14 +540,15 @@
     }
 
     function clearHistory() {
-      if (confirm('Hapus SEMUA history transaksi?')) historyRef.set(null);
-      modalRef.set(0);
+      if (confirm('Hapus SEMUA history transaksi?')) {
+        historyRef.set(null);
+        modalRef.set(0);
+      }
     }
 
     function hapusHistoryTerpilih(key, totalH) {
       if (confirm('Hapus history ini? Total Rp ' + totalH.toLocaleString('id-ID') + ' akan dikurangi dari pendapatan hari ini.')) {
         historyRef.child(key).remove();
-        // Otomatis hitung ulang setelah remove (karena on('value') akan trigger)
       }
     }
 
@@ -534,7 +559,6 @@
         tbody.innerHTML = '<tr><td colspan="10" class="text-center">Belum ada history transaksi</td></tr>';
         return;
       }
-      const today = new Date().toLocaleDateString('id-ID');
       Object.keys(history).reverse().forEach((key, i) => {
         const h = history[key];
         const totalH = parseInt(h.total) || 0;
@@ -564,7 +588,11 @@
               <input type="text" class="form-control mb-2" value="${m.nama}" onchange="updateMenu(${i}, 'nama', this.value)">
               <input type="number" class="form-control mb-2" value="${m.harga}" onchange="updateMenu(${i}, 'harga', parseInt(this.value))">
               <input type="text" class="form-control mb-2" value="${m.img}" onchange="updateMenu(${i}, 'img', this.value)">
-              <button class="btn btn-danger btn-sm w-100" onclick="hapusMenu(${i})">Hapus</button>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" ${m.habis ? 'checked' : ''} onchange="updateMenu(${i}, 'habis', this.checked)">
+                <label class="form-check-label text-danger fw-bold">Tandai HABIS</label>
+              </div>
+              <button class="btn btn-danger btn-sm w-100 mt-2" onclick="hapusMenu(${i})">Hapus Menu</button>
             </div>
           </div>
         </div>`;
@@ -572,7 +600,9 @@
     }
 
     function updateMenu(i, field, value) {
-      menu[i][field] = field === 'harga' ? value : value;
+      if (field === 'harga') value = parseInt(value) || 0;
+      if (field === 'habis') value = !!value;
+      menu[i][field] = value;
       menuRef.set(menu);
     }
 
@@ -585,10 +615,10 @@
 
     function tambahMenuBaru() {
       const nama = prompt('Nama menu baru:');
-      const harga تمرین = parseInt(prompt('Harga:'));
+      const harga = parseInt(prompt('Harga:'));
       const img = prompt('Link gambar:') || 'https://via.placeholder.com/400';
       if (nama && harga) {
-        menu.push({nama, harga, img});
+        menu.push({nama, harga, img, habis: false});
         menuRef.set(menu);
       }
     }
