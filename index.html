@@ -12,7 +12,6 @@
     .menu-card:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     .img-menu { height: 180px; object-fit: cover; }
     .d-none { display: none !important; }
-    @media (max-width: 767px) { #adminBtn { display: inline-block !important; } }
     #notifSound { display: none; }
   </style>
 </head>
@@ -68,15 +67,36 @@
     <h2 class="text-danger fw-bold">📊 Dashboard Admin
       <button onclick="logout()" class="btn btn-danger btn-sm float-end">Logout</button>
       <button onclick="clearAllPesanan()" class="btn btn-warning btn-sm float-end me-2">Hapus Semua Pesanan</button>
+      <button onclick="clearHistory()" class="btn btn-dark btn-sm float-end me-2">Hapus History</button>
       <button onclick="tambahMenuBaru()" class="btn btn-success btn-sm float-end me-2">+ Menu Baru</button>
     </h2>
-    <div class="table-responsive mb-4">
-      <table class="table table-striped" id="ordersTable">
-        <thead class="table-dark">
-          <tr><th>No</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Waktu</th><th>Aksi</th></tr>
-        </thead>
-        <tbody><tr><td colspan="8" class="text-center">Loading pesanan...</td></tr></tbody>
-      </table>
+    <ul class="nav nav-tabs mb-4" id="adminTabs">
+      <li class="nav-item">
+        <a class="nav-link active" href="#" onclick="switchTab('pending')">Pesanan Masuk</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" onclick="switchTab('history')">History Transaksi</a>
+      </li>
+    </ul>
+    <div id="pendingTab">
+      <div class="table-responsive mb-4">
+        <table class="table table-striped" id="ordersTable">
+          <thead class="table-dark">
+            <tr><th>No</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Waktu</th><th>Aksi</th></tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="text-center">Loading pesanan...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="historyTab" class="d-none">
+      <div class="table-responsive mb-4">
+        <table class="table table-striped" id="historyTable">
+          <thead class="table-success">
+            <tr><th>No</th><th>Nama</th><th>HP</th><th>Pembayaran</th><th>Items</th><th>Total</th><th>Waktu Masuk</th><th>Waktu Selesai</th></tr>
+          </thead>
+          <tbody><tr><td colspan="8" class="text-center">Loading history...</td></tr></tbody>
+        </table>
+      </div>
     </div>
     <h4>MENU TERKINI ⬇️⬇️</h4>
     <div id="menuAdminContainer" class="row row-cols-2 row-cols-md-4 g-4">Loading...</div>
@@ -107,9 +127,11 @@
     const db = firebase.database();
     const menuRef = db.ref('menu');
     const pesananRef = db.ref('pesanan');
+    const historyRef = db.ref('history');
     let cart = JSON.parse(localStorage.getItem('cartWarung') || '[]');
     let menu = [];
     let pesanan = {};
+    let history = {};
     // Menu real-time
     menuRef.on('value', (snap) => {
       menu = snap.val() || [];
@@ -129,7 +151,7 @@
       renderMenu();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) renderMenuAdmin();
     });
-    // Pesanan real-time NO LOOP
+    // Pesanan real-time
     pesananRef.on('child_added', (snap) => {
       pesanan[snap.key] = snap.val();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
@@ -141,12 +163,30 @@
       delete pesanan[snap.key];
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
+    // History real-time
+    historyRef.on('value', (snap) => {
+      history = snap.val() || {};
+      if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadHistory();
+    });
+    function switchTab(tab) {
+      document.querySelectorAll('#pendingTab, #historyTab').forEach(el => el.classList.add('d-none'));
+      document.getElementById(tab + 'Tab').classList.remove('d-none');
+      document.querySelectorAll('#adminTabs .nav-link').forEach(a => a.classList.remove('active'));
+      event.target.classList.add('active');
+      if (tab === 'pending') loadPesanan();
+      if (tab === 'history') loadHistory();
+    }
     function showPage(id) {
       document.querySelectorAll('#menuPage, #keranjangPage, #checkoutPage, #loginPage, #adminPage').forEach(el => el.classList.add('d-none'));
       document.getElementById(id).classList.remove('d-none');
       if (id === 'menuPage') renderMenu();
       if (id === 'keranjangPage') renderCart();
-      if (id === 'adminPage') { loadPesanan(); renderMenuAdmin(); }
+      if (id === 'adminPage') { 
+        switchTab('pending');
+        loadPesanan(); 
+        loadHistory();
+        renderMenuAdmin(); 
+      }
     }
     function renderMenu() {
       const cont = document.getElementById('menuContainer');
@@ -274,10 +314,39 @@
       });
     }
     function selesaiPesanan(key) {
-      if (confirm('Tandai selesai?')) pesananRef.child(key).remove();
+      if (confirm('Tandai selesai? Pesanan akan masuk ke History')) {
+        const pesananSelesai = pesanan[key];
+        pesananSelesai.waktuSelesai = new Date().toLocaleString('id-ID');
+        historyRef.push(pesananSelesai);
+        pesananRef.child(key).remove();
+      }
     }
     function clearAllPesanan() {
-      if (confirm('Hapus SEMUA pesanan?')) pesananRef.set(null);
+      if (confirm('Hapus SEMUA pesanan masuk?')) pesananRef.set(null);
+    }
+    function clearHistory() {
+      if (confirm('Hapus SEMUA history transaksi?')) historyRef.set(null);
+    }
+    function loadHistory() {
+      const tbody = document.querySelector('#historyTable tbody');
+      tbody.innerHTML = '';
+      if (Object.keys(history).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada history transaksi</td></tr>';
+        return;
+      }
+      Object.keys(history).reverse().forEach((key, i) => {
+        const h = history[key];
+        tbody.innerHTML += `<tr>
+          <td>${i+1}</td>
+          <td>${h.nama}</td>
+          <td>${h.hp}</td>
+          <td><span class="badge bg-${h.pembayaran.includes('Cash') ? 'success' : 'primary'}">${h.pembayaran}</span></td>
+          <td>${h.items}</td>
+          <td>Rp ${h.total.toLocaleString('id-ID')}</td>
+          <td>${h.waktu}</td>
+          <td>${h.waktuSelesai || '-'}</td>
+        </tr>`;
+      });
     }
     function renderMenuAdmin() {
       const cont = document.getElementById('menuAdminContainer');
