@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { background: #fff8e1; font-family: 'Segoe UI', sans-serif; }
     .menu-card { transition: 0.3s; cursor: pointer; }
@@ -91,9 +92,9 @@
       <button onclick="clearHistory()" class="btn btn-dark btn-sm float-end me-2">Hapus History</button>
       <button onclick="tambahMenuBaru()" class="btn btn-success btn-sm float-end me-2">+ Menu Baru</button>
     </h2>
-    
+   
     <div class="row mb-4">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card text-white bg-success total-card">
           <div class="card-body text-center">
             <h4>Total Pendapatan Hari Ini</h4>
@@ -101,7 +102,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card text-white bg-primary total-card">
           <div class="card-body text-center">
             <h4>Laba Kotor Hari Ini</h4>
@@ -109,12 +110,37 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card text-white bg-info total-card">
           <div class="card-body text-center">
             <h4>Laba Bersih Hari Ini</h4>
             <h3 id="labaBersih">Rp 0</h3>
           </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-white bg-dark total-card">
+          <div class="card-body text-center">
+            <h4>Total Barang Terjual</h4>
+            <h3 id="totalBarangTerjual">0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow mb-4">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5>📦 Statistik Penjualan Per Menu (Hari Ini)</h5>
+        <button class="btn btn-success btn-sm" onclick="exportToExcel()">📊 Export ke Excel</button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="statistikTable">
+            <thead class="table-dark">
+              <tr><th>No</th><th>Nama Menu</th><th>Terjual (qty)</th><th>Pendapatan</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -130,7 +156,6 @@
         <small class="text-muted">Modal hari ini tersimpan otomatis di Firebase (real-time semua device)</small>
       </div>
     </div>
-
     <ul class="nav nav-tabs mb-4" id="adminTabs">
       <li class="nav-item">
         <a class="nav-link active" href="#" onclick="switchTab('pending')">Pesanan Masuk</a>
@@ -159,7 +184,6 @@
         </table>
       </div>
     </div>
-
     <h4 class="mt-5">🧮 Kalkulator Kembalian (Cash)</h4>
     <div class="card shadow mb-4">
       <div class="card-body">
@@ -183,7 +207,6 @@
         </div>
       </div>
     </div>
-
     <h4>MENU TERKINI ⬇️⬇️</h4>
     <div id="menuAdminContainer" class="row row-cols-2 row-cols-md-4 g-4">Loading...</div>
   </div>
@@ -221,7 +244,8 @@
     let history = {};
     let totalPendapatanHariIni = 0;
     let modalHariIni = 0;
-
+    let totalBarangTerjualHariIni = 0;
+    let statistikPenjualan = {};
     const defaultMenu = [
       {nama: "Nasi Goreng Spesial", harga: 25000, img: "https://images.unsplash.com/photo-1603133874008-61ba9ed3c9e8?w=400", habis: false},
       {nama: "Mie Ayam Bakso", harga: 22000, img: "https://images.unsplash.com/photo-1621996346565-e3dbc44ae2d2?w=400", habis: false},
@@ -232,7 +256,6 @@
       {nama: "Es Teh Manis", harga: 5000, img: "https://images.unsplash.com/photo-1623278526302-7e89f05a23be?w=400", habis: false},
       {nama: "Kopi Hitam", harga: 8000, img: "https://images.unsplash.com/photo-1517251567592-6a846f655713?w=400", habis: false}
     ];
-
     function renderDefaultMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
@@ -243,14 +266,13 @@
           <div class="card menu-card h-100 text-center border-0 shadow${habisClass}" ${onclick}>
             <img src="${m.img}" class="card-img-top img-menu rounded-top" alt="${m.nama}" onerror="this.src='https://via.placeholder.com/400x180?text=No+Image';">
             <div class="card-body">
-              <h6 class="card-title fw-bold">${m.nama}</h6>
+              <h6 class="card-title fwd-bold">${m.nama}</h6>
               <p class="text-danger fw-bold">Rp ${m.harga.toLocaleString('id-ID')}</p>
             </div>
           </div>
         </div>`;
       });
     }
-
     menuRef.on('value', (snap) => {
       const data = snap.val();
       if (data && Array.isArray(data) && data.length > 0) {
@@ -266,29 +288,26 @@
       renderMenu();
       alert('Koneksi Firebase bermasalah, menggunakan menu default.');
     });
-
     setTimeout(() => {
       if (menu.length === 0) {
         menu = defaultMenu;
         renderMenu();
       }
     }, 5000);
-
     modalRef.on('value', (snap) => {
       modalHariIni = parseInt(snap.val()) || 0;
       document.getElementById('modalHariIni').value = modalHariIni;
       hitungLaba();
     });
-
     historyRef.on('value', (snap) => {
       history = snap.val() || {};
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
         loadHistory();
         hitungPendapatanHariIni();
         hitungLaba();
+        hitungStatistikPenjualan();
       }
     });
-
     pesananRef.on('child_added', (snap) => {
       pesanan[snap.key] = snap.val();
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) {
@@ -304,45 +323,99 @@
       delete pesanan[snap.key];
       if (document.getElementById('adminPage') && !document.getElementById('adminPage').classList.contains('d-none')) loadPesanan();
     });
-
     function simpanModal() {
       const val = parseInt(document.getElementById('modalHariIni').value) || 0;
       modalRef.set(val);
       alert('Modal hari ini disimpan: Rp ' + val.toLocaleString('id-ID'));
     }
-
     function hitungPendapatanHariIni() {
       const today = new Date().toLocaleDateString('id-ID');
       totalPendapatanHariIni = 0;
+      totalBarangTerjualHariIni = 0;
+      statistikPenjualan = {};
       Object.values(history).forEach(h => {
         if (h.waktuSelesai && h.waktuSelesai.includes(today)) {
           totalPendapatanHariIni += parseInt(h.total) || 0;
+          const items = h.items.split(', ');
+          items.forEach(it => {
+            const match = it.match(/(.*?)\s×\s(\d+)$/);
+            if (match) {
+              const nama = match[1].trim();
+              const qty = parseInt(match[2]);
+              totalBarangTerjualHariIni += qty;
+              if (!statistikPenjualan[nama]) statistikPenjualan[nama] = {qty: 0, pendapatan: 0, harga: 0};
+              statistikPenjualan[nama].qty += qty;
+              const menuItem = menu.find(m => m.nama === nama);
+              const hargaSatuan = menuItem ? menuItem.harga : 0;
+              statistikPenjualan[nama].harga = hargaSatuan;
+              statistikPenjualan[nama].pendapatan += qty * hargaSatuan;
+            }
+          });
         }
       });
       document.getElementById('totalPendapatan').textContent = 'Rp ' + totalPendapatanHariIni.toLocaleString('id-ID');
+      document.getElementById('totalBarangTerjual').textContent = totalBarangTerjualHariIni;
+      renderStatistikPenjualan();
     }
-
+    function hitungStatistikPenjualan() {
+      hitungPendapatanHariIni();
+    }
+    function renderStatistikPenjualan() {
+      const tbody = document.querySelector('#statistikTable tbody');
+      tbody.innerHTML = '';
+      let no = 1;
+      for (const nama in statistikPenjualan) {
+        const s = statistikPenjualan[nama];
+        tbody.innerHTML += `<tr>
+          <td>${no++}</td>
+          <td>${nama}</td>
+          <td>${s.qty}</td>
+          <td>Rp ${s.pendapatan.toLocaleString('id-ID')}</td>
+        </tr>`;
+      }
+      if (no === 1) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada penjualan hari ini</td></tr>';
+      }
+    }
+    function exportToExcel() {
+      const today = new Date().toLocaleDateString('id-ID');
+      const data = [];
+      data.push(['LAPORAN PENJUALAN HARI INI']);
+      data.push([`Tanggal: ${today}`]);
+      data.push(['Total Pendapatan', `Rp ${totalPendapatanHariIni.toLocaleString('id-ID')}`]);
+      data.push(['Total Barang Terjual', totalBarangTerjualHariIni]);
+      data.push(['Modal Hari Ini', `Rp ${modalHariIni.toLocaleString('id-ID')}`]);
+      data.push(['Laba Bersih', `Rp ${(totalPendapatanHariIni - modalHariIni).toLocaleString('id-ID')}`]);
+      data.push([]);
+      data.push(['No', 'Nama Menu', 'Terjual (qty)', 'Pendapatan']);
+      let no = 1;
+      for (const nama in statistikPenjualan) {
+        const s = statistikPenjualan[nama];
+        data.push([no++, nama, s.qty, `Rp ${s.pendapatan.toLocaleString('id-ID')}`]);
+      }
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
+      XLSX.writeFile(wb, `Laporan_Penjualan_${today.replace(/\//g, '-')}.xlsx`);
+    }
     function hitungLaba() {
       const labaKotor = totalPendapatanHariIni;
       const labaBersih = labaKotor - modalHariIni;
       document.getElementById('labaKotor').textContent = 'Rp ' + labaKotor.toLocaleString('id-ID');
       document.getElementById('labaBersih').textContent = 'Rp ' + (labaBersih >= 0 ? labaBersih.toLocaleString('id-ID') : '0');
     }
-
     function hitungKembalian() {
       const tagihan = parseInt(document.getElementById('tagihanCalc').value) || 0;
       const dibayar = parseInt(document.getElementById('dibayarCalc').value) || 0;
       const kembalian = dibayar - tagihan;
       document.getElementById('kembalianCalc').value = kembalian >= 0 ? kembalian : 0;
     }
-
     function setTagihan(total) {
       document.getElementById('tagihanCalc').value = total;
       document.getElementById('dibayarCalc').value = '';
       document.getElementById('kembalianCalc').value = '0';
       hitungKembalian();
     }
-
     function switchTab(tab) {
       document.querySelectorAll('#pendingTab, #historyTab').forEach(el => el.classList.add('d-none'));
       document.getElementById(tab + 'Tab').classList.remove('d-none');
@@ -351,22 +424,20 @@
       if (tab === 'pending') loadPesanan();
       if (tab === 'history') loadHistory();
     }
-
     function showPage(id) {
       document.querySelectorAll('#menuPage, #keranjangPage, #checkoutPage, #loginPage, #adminPage').forEach(el => el.classList.add('d-none'));
       document.getElementById(id).classList.remove('d-none');
       if (id === 'menuPage') renderMenu();
       if (id === 'keranjangPage') renderCart();
-      if (id === 'adminPage') { 
+      if (id === 'adminPage') {
         switchTab('pending');
-        loadPesanan(); 
+        loadPesanan();
         loadHistory();
         hitungPendapatanHariIni();
         hitungLaba();
-        renderMenuAdmin(); 
+        renderMenuAdmin();
       }
     }
-
     function renderMenu() {
       const cont = document.getElementById('menuContainer');
       cont.innerHTML = '';
@@ -384,7 +455,6 @@
         </div>`;
       });
     }
-
     function addToCart(nama, harga, img) {
       const m = menu.find(i => i.nama === nama);
       if (m && m.habis) {
@@ -398,12 +468,10 @@
       updateCartCount();
       alert(nama + ' ditambahkan ke keranjang!');
     }
-
     function updateCartCount() {
       const totalQty = cart.reduce((s, i) => s + i.qty, 0);
       document.getElementById('cartCount').textContent = totalQty || '0';
     }
-
     function renderCart() {
       const itemsDiv = document.getElementById('cartItems');
       let html = '';
@@ -435,7 +503,6 @@
       itemsDiv.innerHTML = html;
       document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
     }
-
     function changeQty(idx, delta) {
       cart[idx].qty += delta;
       if (cart[idx].qty <= 0) cart.splice(idx, 1);
@@ -443,14 +510,12 @@
       renderCart();
       updateCartCount();
     }
-
     function removeItem(idx) {
       cart.splice(idx, 1);
       localStorage.setItem('cartWarung', JSON.stringify(cart));
       renderCart();
       updateCartCount();
     }
-
     function kirimPesanan() {
       const nama = document.getElementById('namaCheckout').value.trim();
       const hp = document.getElementById('hpCheckout').value.trim();
@@ -474,7 +539,6 @@
       updateCartCount();
       showPage('menuPage');
     }
-
     function loginAdmin() {
       if (document.getElementById('adminPass').value === 'admintkj') {
         sessionStorage.setItem('adminOK', 'ya');
@@ -483,12 +547,10 @@
         alert('Password salah! Coba lagi atau klik tombol 🤫 Auto Fill + Login');
       }
     }
-
     function logout() {
       sessionStorage.removeItem('adminOK');
       showPage('menuPage');
     }
-
     function loadPesanan() {
       if (sessionStorage.getItem('adminOK') !== 'ya') return showPage('loginPage');
       const tbody = document.querySelector('#ordersTable tbody');
@@ -521,11 +583,9 @@
         </tr>`;
       });
     }
-
     function setStatus(key, newStatus) {
       pesananRef.child(key).update({status: newStatus});
     }
-
     function selesaiPesanan(key) {
       if (confirm('Tandai selesai? Pesanan akan masuk ke History')) {
         const pesananSelesai = pesanan[key];
@@ -534,24 +594,20 @@
         pesananRef.child(key).remove();
       }
     }
-
     function clearAllPesanan() {
       if (confirm('Hapus SEMUA pesanan masuk?')) pesananRef.set(null);
     }
-
     function clearHistory() {
       if (confirm('Hapus SEMUA history transaksi?')) {
         historyRef.set(null);
         modalRef.set(0);
       }
     }
-
     function hapusHistoryTerpilih(key, totalH) {
       if (confirm('Hapus history ini? Total Rp ' + totalH.toLocaleString('id-ID') + ' akan dikurangi dari pendapatan hari ini.')) {
         historyRef.child(key).remove();
       }
     }
-
     function loadHistory() {
       const tbody = document.querySelector('#historyTable tbody');
       tbody.innerHTML = '';
@@ -576,7 +632,6 @@
         </tr>`;
       });
     }
-
     function renderMenuAdmin() {
       const cont = document.getElementById('menuAdminContainer');
       cont.innerHTML = '';
@@ -598,21 +653,18 @@
         </div>`;
       });
     }
-
     function updateMenu(i, field, value) {
       if (field === 'harga') value = parseInt(value) || 0;
       if (field === 'habis') value = !!value;
       menu[i][field] = value;
       menuRef.set(menu);
     }
-
     function hapusMenu(i) {
       if (confirm('Hapus menu ini?')) {
         menu.splice(i, 1);
         menuRef.set(menu);
       }
     }
-
     function tambahMenuBaru() {
       const nama = prompt('Nama menu baru:');
       const harga = parseInt(prompt('Harga:'));
@@ -622,7 +674,6 @@
         menuRef.set(menu);
       }
     }
-
     // INIT
     renderDefaultMenu();
     updateCartCount();
